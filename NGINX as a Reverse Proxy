@@ -1,0 +1,66 @@
+Here’s a **complete and step-by-step guide** for your **Day-4 LAB** covering:
+
+1. 🔁 **NGINX as a Reverse Proxy**
+2. 🖥️ **NCPA with Nagios for Windows Monitoring**
+
+---
+
+## ✅ PART 1: NGINX as a Reverse Proxy
+
+---
+
+### 🔧 Step 1: Install NGINX
+
+```bash
+sudo apt update
+sudo apt install nginx -y
+```
+
+---
+
+### 🔧 Step 2: Remove default site
+
+```bash
+sudo rm /etc/nginx/sites-enabled/*
+```
+
+---
+
+### 🔧 Step 3: Create new reverse proxy config
+
+```bash
+sudo nano /etc/nginx/sites-available/reverse.conf
+```
+
+Paste the following (replace `sourceip` with your actual backend server IP like `192.168.80.129`):
+
+```nginx
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://192.168.80.129;
+    }
+}
+```
+
+---
+
+### 🔧 Step 4: Create symbolic link in `sites-enabled`
+
+```bash
+sudo ln -s /etc/nginx/sites-available/reverse.conf /etc/nginx/sites-enabled/
+```
+
+---
+
+### 🔧 Step 5: Test and restart NGINX
+
+```bash
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+✅ Now, accessing your NGINX server's IP in a browser will show content from the backend server.
+
+---
