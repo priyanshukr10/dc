@@ -1,0 +1,127 @@
+Here's a **step-by-step guide for your Day-2 LAB** covering **Snort (IDS)** setup on **Windows**, including error resolutions and basic `tcpdump` usage for Linux:
+
+---
+
+## 🧪 **Day-2 LAB: Snort IDS + Tcpdump**
+
+---
+
+### 🛡️ SNORT – Intrusion Detection System (Windows)
+
+#### 🔧 **Pre-Setup:**
+
+1. **Exclude Snort directory from Windows Defender**.
+2. **Install Snort** from [Snort.org](https://www.snort.org/downloads).
+3. Install **WinPcap** or **Npcap** (required for packet capture).
+4. Run **Command Prompt as Administrator**.
+
+---
+
+### 🔍 **Get Adapter Info:**
+
+```cmd
+getmac /fo csv /v
+```
+
+Use the **index of your network adapter** with Snort (e.g., `-i 1`).
+
+---
+
+### 📁 **Snort Folder Setup:**
+
+* Create directory: `C:\Snort`
+* Copy the entire ruleset and conf files into this directory.
+
+---
+
+### ▶️ **Run Snort in IDS Mode:**
+
+```cmd
+snort -i 1 -c C:\Snort\etc\snort.conf -l C:\Snort\log -A console
+```
+
+---
+
+### ⚠️ **Common Errors & Fixes:**
+
+| Error                           | Fix                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| A. `Unknown rule type ipvar`    | Replace `ipvar` with `var` in `snort.conf`                                |
+| B. `snort_dynamicpreprocessor`  | Correct 14 dynamic preprocessor paths in `snort.conf` to `C:\Snort\lib\*` |
+| C. `snort_dynamicengine`        | Same fix: update path in config                                           |
+| D. `snort_dynamicdetection`     | Create empty folder: `C:\Snort\lib\snort_dynamicrules`                    |
+| E. `normalize_ip4`              | Comment out the 5 related lines in `snort.conf`                           |
+| F. `white_list.rules` not found | Create `white_list.rules` in `C:\Snort\rules`                             |
+| G. `black_list.rules` not found | Create `black_list.rules` in same location                                |
+
+---
+
+### 🛠️ **Update Variables in `snort.conf`:**
+
+```conf
+var RULE_PATH C:\Snort\rules
+var SO_RULE_PATH C:\Snort\rules
+var PREPROC_RULE_PATH C:\Snort\rules
+var WHITE_LIST_PATH C:\Snort\rules
+var BLACK_LIST_PATH C:\Snort\rules
+
+whitelist $WHITE_LIST_PATH/white_list.rules
+blacklist $BLACK_LIST_PATH/black_list.rules
+
+include $RULE_PATH/black_list.rules
+```
+
+---
+
+### 🧾 **Example Snort Rule (Custom):**
+
+Create a file `local.rules` inside `C:\Snort\rules` and add:
+
+```snort
+alert ip any any -> any any (msg:"Custom Alert Test"; sid:1000001;)
+```
+
+Then ensure `local.rules` is included in `snort.conf`:
+
+```conf
+include $RULE_PATH/local.rules
+```
+
+---
+
+## 📡 TCPDUMP – Packet Capture (Linux)
+
+### 🔧 **Install Tcpdump:**
+
+```bash
+sudo apt install tcpdump -y
+```
+
+---
+
+### ▶️ **Basic Usage:**
+
+| Command                | Function                        |
+| ---------------------- | ------------------------------- |
+| `sudo tcpdump -i eth0` | Capture traffic on `eth0`       |
+| `-c 10`                | Capture 10 packets only         |
+| `-n`                   | No DNS name resolution          |
+| `-w file.pcap`         | Write capture to a `.pcap` file |
+| `-r file.pcap`         | Read from a saved file          |
+
+---
+
+### 🎯 **Filtering Examples:**
+
+| Command                          | Purpose                               |
+| -------------------------------- | ------------------------------------- |
+| `tcpdump net 192.168.1.0/24`     | Capture traffic for the entire subnet |
+| `tcpdump dst net 192.168.1.0/24` | Destination-specific network          |
+| `tcpdump host 192.168.1.100`     | For a single host                     |
+| `tcpdump src net 10.0.0.0/8`     | Source IP range                       |
+| `tcpdump port 80`                | Port 80 (HTTP) traffic                |
+| `tcpdump portrange 20-25`        | Traffic on port range 20-25           |
+
+---
+
+If you'd like a **Snort + tcpdump lab test case**, **Wireshark integration**, or **automatic rule deployment script**, let me know!
