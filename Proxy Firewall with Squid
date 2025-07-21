@@ -1,0 +1,71 @@
+## 🧱 3. Proxy Firewall with Squid
+
+### ✅ Installation
+
+```bash
+sudo apt install squid
+```
+
+### ✅ Basic Configuration
+
+Edit config:
+
+```bash
+sudo nano /etc/squid/squid.conf
+```
+
+Allow your network to use the proxy (replace with your IP subnet):
+
+```conf
+acl localnet src 192.168.1.0/24
+http_access allow localnet
+```
+
+Set Squid to listen on internal interface:
+
+```conf
+http_port 3128
+```
+
+Restart Squid:
+
+```bash
+sudo systemctl restart squid
+```
+
+---
+
+## ✅ Configure Client to Use Squid
+
+On a client machine:
+
+* Browser or system proxy settings:
+
+  * HTTP Proxy: `192.168.1.X` (Squid server IP)
+  * Port: `3128`
+
+---
+
+---
+
+## 🔒 Bonus: Block Sites with Squid
+
+Edit `/etc/squid/squid.conf`:
+
+```conf
+acl blocked_sites dstdomain .facebook.com .youtube.com
+http_access deny blocked_sites
+```
+
+Restart Squid:
+
+```bash
+sudo systemctl restart squid
+```
+
+---
+
+## 🧪 Test Proxy Firewall
+
+* Visit `http://youtube.com` → should be **blocked**
+* Visit `http://example.com` → should **work**
