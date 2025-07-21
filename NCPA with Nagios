@@ -1,0 +1,148 @@
+
+## ✅ PART 2: NCPA (Nagios Cross Platform Agent) with Nagios
+
+---
+
+### 💻 Step 1: Install NCPA on Windows
+
+1. Download from: [https://www.nagios.org/ncpa/](https://www.nagios.org/ncpa/)
+2. Install and set a secure token.
+3. Default port: `5693`
+
+🔑 Save your token! (used in checks)
+
+---
+
+### 💡 Step 2: On Nagios Machine
+
+#### 🔸 a. Download NCPA plugin
+
+```bash
+cd /usr/lib/nagios/plugins
+sudo wget https://assets.nagios.com/downloads/ncpa/check_ncpa.py
+sudo chmod +x check_ncpa.py
+```
+
+#### 🔸 b. Update Python interpreter (if needed)
+
+Open the file:
+
+```bash
+sudo nano check_ncpa.py
+```
+
+Change first line:
+
+```python
+#!/usr/bin/env python3
+```
+
+---
+
+### 🛠️ Step 3: Define NCPA command in Nagios
+
+Edit:
+
+```bash
+sudo nano /usr/local/nagios/etc/objects/commands.cfg
+```
+
+Add:
+
+```cfg
+define command {
+    command_name    check_ncpa
+    command_line    $USER1$/check_ncpa.py -H $HOSTADDRESS$ $ARG1$
+}
+```
+
+---
+
+### 🧱 Step 4: Enable `cfg_dir` in `nagios.cfg`
+
+Edit:
+
+```bash
+sudo nano /usr/local/nagios/etc/nagios.cfg
+```
+
+Uncomment or add:
+
+```cfg
+cfg_dir=/usr/local/nagios/etc/servers
+```
+
+---
+
+### 📁 Step 5: Create `servers/` directory & Windows host config
+
+```bash
+sudo mkdir /usr/local/nagios/etc/servers
+sudo nano /usr/local/nagios/etc/servers/win10-1.cfg
+```
+
+Paste the following:
+
+```cfg
+define host {
+    use                     windows-server
+    host_name               win10-1
+    alias                   Windows 10 Sys 1
+    address                 <Windows-IP>
+    max_check_attempts      5
+}
+
+define service {
+    use                     generic-service
+    host_name               win10-1
+    service_description     NCPA version check
+    check_command           check_ncpa!-t 'your_token' -P 5693 -M system/agent_version
+}
+
+define service {
+    use                     generic-service
+    host_name               win10-1
+    service_description     CPU average
+    check_command           check_ncpa!-t 'your_token' -P 5693 -M cpu/percent -w 20 -c 40 -q 'aggregate=avg'
+}
+```
+
+Replace:
+
+* `<Windows-IP>` with actual IP of your Windows machine
+* `'your_token'` with the actual NCPA token
+
+---
+
+### 🛑 Step 6: Comment default Windows template (optional fix)
+
+Edit:
+
+```bash
+sudo nano /usr/local/nagios/etc/objects/templates.cfg
+```
+
+Comment:
+
+```cfg
+# cfg_file=/usr/local/nagios/etc/objects/windows.cfg
+```
+
+---
+
+### 🔄 Step 7: Restart Nagios
+
+```bash
+sudo systemctl restart nagios
+```
+
+---
+
+## ✅ Final Check
+
+* Access Nagios Web UI → see `win10-1` host and NCPA checks
+* Go to `http://<nginx-ip>` to verify NGINX reverse proxy
+
+---
+
+Would you like a script that auto-generates these configs for new Windows hosts?
