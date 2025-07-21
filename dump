@@ -1,0 +1,174 @@
+Here's a complete guide on **installing, verifying, and using `tcpdump`**, one of the most powerful and essential tools for packet analysis in Linux-based environments.
+
+---
+
+## 🧰 What is `tcpdump`?
+
+**`tcpdump`** is a command-line network packet analyzer. It captures and displays packets that pass through a network interface.
+
+---
+
+## 🔧 1. Installation
+
+### ✅ On Debian/Ubuntu:
+
+```bash
+sudo apt update
+sudo apt install tcpdump
+```
+
+### ✅ On Red Hat/CentOS:
+
+```bash
+sudo yum install tcpdump
+```
+
+### ✅ On macOS (with Homebrew):
+
+```bash
+brew install tcpdump
+```
+
+---
+
+## 🧪 2. Verify Installation
+
+Run:
+
+```bash
+tcpdump --version
+```
+
+Expected output:
+
+```bash
+tcpdump version 4.x.x
+libpcap version 1.x.x
+```
+
+You can also check if it runs:
+
+```bash
+sudo tcpdump -D
+```
+
+This lists all available network interfaces.
+
+---
+
+## 📡 3. Basic Usage of `tcpdump`
+
+### ✅ Syntax:
+
+```bash
+sudo tcpdump [options] [expression]
+```
+
+---
+
+## 🔍 4. Common Examples
+
+### 🔹 A. Capture traffic on a specific interface
+
+```bash
+sudo tcpdump -i eth0
+```
+
+### 🔹 B. Capture only 10 packets
+
+```bash
+sudo tcpdump -i eth0 -c 10
+```
+
+### 🔹 C. Capture only TCP traffic
+
+```bash
+sudo tcpdump -i eth0 tcp
+```
+
+### 🔹 D. Capture traffic on a specific port
+
+```bash
+sudo tcpdump -i eth0 port 80
+```
+
+### 🔹 E. Capture packets to/from a specific IP
+
+```bash
+sudo tcpdump -i eth0 host 192.168.1.5
+```
+
+### 🔹 F. Write capture to file for later analysis (with Wireshark)
+
+```bash
+sudo tcpdump -i eth0 -w capture.pcap
+```
+
+### 🔹 G. Read a `.pcap` file
+
+```bash
+tcpdump -r capture.pcap
+```
+
+---
+
+## 📦 5. Filters (Expressions)
+
+| Filter             | Example              | Description                  |
+| ------------------ | -------------------- | ---------------------------- |
+| `host`             | `host 192.168.1.1`   | Matches traffic to/from host |
+| `src` or `dst`     | `src 10.0.0.1`       | Source or destination        |
+| `port`             | `port 443`           | Matches port                 |
+| `proto`            | `tcp`, `udp`, `icmp` | Match specific protocols     |
+| `and`, `or`, `not` | `tcp and port 22`    | Combine expressions          |
+
+---
+
+## 📌 6. Useful Options
+
+| Option            | Purpose             |
+| ----------------- | ------------------- |
+| `-i`              | Interface           |
+| `-c`              | Capture count       |
+| `-n`              | Don't resolve names |
+| `-v`/`-vv`/`-vvv` | Increase verbosity  |
+| `-w file.pcap`    | Write output        |
+| `-r file.pcap`    | Read from file      |
+
+---
+
+## 🧠 Example Use Case
+
+Monitor SSH login attempts:
+
+```bash
+sudo tcpdump -i eth0 port 22 and tcp
+```
+
+Capture HTTP GET requests (basic detection):
+
+```bash
+sudo tcpdump -i eth0 -A -s 0 'tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'
+```
+
+---
+
+## ✅ Summary
+
+| Task            | Command                    |
+| --------------- | -------------------------- |
+| Install         | `sudo apt install tcpdump` |
+| Verify          | `tcpdump --version`        |
+| Capture packets | `sudo tcpdump -i eth0`     |
+| Save to file    | `-w filename.pcap`         |
+| Read from file  | `tcpdump -r filename.pcap` |
+
+---
+
+Would you like:
+
+* A cheat sheet PDF for tcpdump?
+* Custom scripts to log suspicious packets?
+* Integration with **Wireshark** or **Fail2ban**?
+
+Let me know how deep you'd like to go!
