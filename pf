@@ -1,0 +1,190 @@
+---
+
+## ✅ Step-by-Step Installation
+
+### **1. Download pfSense**
+
+Go to: [https://www.pfsense.org/download/](https://www.pfsense.org/download/)
+
+* Architecture: `AMD64`
+* Installer: `USB Memstick Installer`
+* Console: `VGA`
+* Mirror: Choose nearest
+
+### **2. Create a Bootable USB Drive**
+
+Use [Rufus](https://rufus.ie/) (Windows) or `dd` (Linux/macOS):
+
+```bash
+sudo dd if=pfSense.iso of=/dev/sdX bs=4M status=progress
+```
+
+> ⚠️ Replace `/dev/sdX` with your USB device (double-check!)
+
+### **3. Boot from USB on Your Firewall Device**
+
+* Plug USB into the target machine
+* Boot into BIOS/UEFI and set USB as first boot device
+* Boot and follow pfSense install wizard:
+
+  * Accept license
+  * Install pfSense
+  * Auto (ZFS) partitioning is fine
+  * Reboot after install and remove USB
+
+---
+
+## 🔧 Step-by-Step Configuration
+
+Once installed and booted:
+
+### **1. Assign Interfaces**
+
+* WAN: Connect to your modem/router
+* LAN: Connect to your internal switch or PC
+
+During setup, pfSense will auto-detect:
+
+* **em0** as LAN
+* **em1** as WAN (or vice versa)
+
+> You can manually reassign interfaces if needed.
+
+### **2. Access pfSense Web GUI**
+
+* Connect a PC to the LAN port
+* Open browser to: `https://192.168.1.1`
+* Default login:
+
+  * **Username:** `admin`
+  * **Password:** `pfsense`
+
+---
+
+## 🧱 Basic Firewall Configuration
+
+### A. **Change Admin Password and Hostname**
+
+* Go to **System > General Setup**
+
+### B. **Configure DHCP (Optional)**
+
+* Go to **Services > DHCP Server**
+* Adjust IP range as needed
+
+### C. **Update pfSense**
+
+* **System > Update** — always update after install
+
+### D. **Set WAN for DHCP (default)**
+
+* pfSense will get an IP from your ISP/router
+
+---
+
+---
+
+### Virtual Networks:
+
+* `WAN` (connected to your real network)
+* `LAN` (internal, e.g., 192.168.1.0/24)
+* `DMZ` (isolated, e.g., 192.168.2.0/24)
+
+---
+
+## 🧱 Step-by-Step Setup Using VirtualBox
+
+### 🔹 Step 1: Create Virtual Networks
+
+1. Open **VirtualBox > Preferences > Network > Host-only Networks**
+
+   * Create `vboxnet0` (LAN)
+   * Create `vboxnet1` (DMZ)
+
+> Or use **Internal Network** mode for tighter isolation.
+
+---
+
+### 🔹 Step 2: Install pfSense VM
+
+* Download ISO: [https://www.pfsense.org/download/](https://www.pfsense.org/download/)
+* Create VM with **3 NICs**:
+
+  1. **Adapter 1 (NAT)** → WAN
+  2. **Adapter 2 (Host-only: vboxnet0)** → LAN
+  3. **Adapter 3 (Host-only: vboxnet1)** → DMZ
+
+> Boot from ISO, install pfSense, assign interfaces (em0 = WAN, em1 = LAN, em2 = DMZ).
+
+---
+
+### 🔹 Step 3: Install Web Server VM
+
+* Create a VM (e.g., Ubuntu Server)
+* Attach 1 NIC:
+
+  * **Host-only Adapter → vboxnet1** (DMZ network)
+* Install Apache:
+
+  ```bash
+  sudo apt update
+  sudo apt install apache2
+  ```
+
+---
+
+### 🔹 Step 4: Configure pfSense Interfaces
+
+Login to the pfSense web GUI (`https://192.168.1.1`):
+
+* Go to **Interfaces > Assignments**
+* Add and enable `OPT1` as the **DMZ**
+
+  * Set static IP: `192.168.2.1/24`
+
+---
+
+### 🔹 Step 5: Configure Firewall Rules
+
+#### ✅ DMZ Interface
+
+Go to **Firewall > Rules > DMZ**:
+
+* **Allow HTTP/HTTPS from WAN to Web Server**
+
+  ```plaintext
+  Action: Pass
+  Interface: WAN
+  Protocol: TCP
+  Destination: Web Server IP (e.g., 192.168.2.10)
+  Port: 80 (and/or 443)
+  ```
+
+#### ❌ Restrict DMZ-to-LAN (default deny)
+
+No rules = blocked. This keeps DMZ isolated from LAN.
+
+---
+
+### 🔹 Step 6: Set Up NAT Port Forwarding (Optional)
+
+If you want external users to access the web server:
+
+1. **Firewall > NAT > Port Forward**
+
+   * Interface: WAN
+   * Protocol: TCP
+   * Destination Port: 80
+   * Redirect to: `192.168.2.10` (web server)
+   * Save & Apply
+
+2. Add corresponding **WAN firewall rule** to allow port 80.
+
+---
+
+### 🔹 Step 7: Test Setup
+
+* From outside: `http://[Your_WAN_IP]` → should show web page
+* From LAN: Test ping/web access to DMZ
+* From DMZ: Confirm no access to LAN (if isolated correctly)
+
