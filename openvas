@@ -1,0 +1,72 @@
+---
+
+## ✅ Step-by-Step: Running a Local Network Scan Using OpenVAS
+
+### Step 1: Install OpenVAS (via GVM)
+
+If you're on Kali Linux or Debian-based systems:
+
+```bash
+sudo apt update
+sudo apt install openvas
+```
+
+Then set it up:
+
+```bash
+sudo gvm-setup
+sudo gvm-check-setup
+```
+
+### Step 2: Start OpenVAS Services
+
+```bash
+sudo gvm-start
+```
+
+This will start the web interface, usually at:
+➡️ `https://127.0.0.1:9392`
+
+Login with the credentials shown during setup (or create a new one using `gvm-manage-certs` if needed).
+
+---
+
+### Step 3: Access the Web UI
+
+* Open your browser and go to: `https://127.0.0.1:9392`
+* Login with your credentials.
+
+---
+
+### Step 4: Scan Your Local Network
+
+1. **Create a Target:**
+
+   * Go to **Configuration > Targets**
+   * Click **"Create Target"**
+   * Enter IP range of your network (e.g., `192.168.1.0/24`)
+   * Choose scan options (e.g., Alive Test: "ICMP, TCP-ACK Service & ARP Ping")
+
+2. **Create a Task:**
+
+   * Go to **Scans > Tasks**
+   * Click **"New Task"**
+   * Choose your created target
+   * Select a scan config like **"Full and fast"**
+
+3. **Start the Task:**
+
+   * Select your task
+   * Click the play icon ▶️ to begin the scan
+
+---
+
+### Step 5: View Scan Results
+
+After the scan completes:
+
+* Navigate to **Scans > Reports**
+* Review the detected vulnerabilities
+* You’ll see severity ratings, affected hosts, and suggested remediation
+
+---
