@@ -1,0 +1,134 @@
+Here’s a **step-by-step guide** for your **Day-5 LAB: Squid as a Reverse Proxy** in a Debian-based environment.
+
+---
+
+## 🧰 LAB OVERVIEW: Squid Reverse Proxy
+
+### 📌 Goal:
+
+Configure Squid to act as a reverse proxy for an Apache2 web server.
+
+---
+
+## 🧱 ENVIRONMENT SETUP
+
+* **Squid Server (Proxy)**: `192.168.80.128`
+* **Apache Server (Origin)**: `192.168.80.129`
+
+---
+
+## 🔧 Step-by-Step Instructions
+
+### ✅ 1. Install Squid
+
+On the Squid server:
+
+```bash
+sudo apt update
+sudo apt install squid -y
+```
+
+---
+
+### ✅ 2. Edit Squid Configuration
+
+```bash
+sudo nano /etc/squid/squid.conf
+```
+
+---
+
+### ✅ 3. Add Custom ACL
+
+Search for `acl localnet src` section and add **your own ACL**:
+
+```bash
+acl my_site_acl dst 192.168.80.128
+```
+
+> This ACL defines access to the Squid server itself.
+
+---
+
+### ✅ 4. Allow Access in http\_access
+
+Search for the section starting with `http_access deny all` or similar. Then add:
+
+```bash
+http_access allow my_site_acl
+```
+
+> Ensures only requests matching `my_site_acl` are allowed.
+
+---
+
+### ✅ 5. Configure Listening Port for Reverse Proxy
+
+Search for `http_port`, and **add above** any existing entries:
+
+```bash
+http_port 3128 accel vhost defaultsite=192.168.80.129
+```
+
+> Squid listens on port `3128` and passes traffic to the origin Apache server.
+
+---
+
+### ✅ 6. Define Apache Web Server as a Parent Cache
+
+Search for `cache_peer`, and **add**:
+
+```bash
+cache_peer 192.168.80.129 parent 80 0 no-query originserver name=myserver
+```
+
+**Explanation**:
+
+* `parent 80`: Apache runs on port 80.
+* `0`: ICP is disabled.
+* `no-query`: Don’t use ICP.
+* `originserver`: Squid treats it as a source of content (like a web server).
+* `name=myserver`: Label for reference.
+
+---
+
+### ✅ 7. Control Access to Parent with `cache_peer_access`
+
+Search for `neighbor_type_domain`, and **add these lines above**:
+
+```bash
+cache_peer_access myserver allow my_site_acl
+cache_peer_access myserver deny all
+```
+
+> These lines control which requests are forwarded to the `myserver`.
+
+---
+
+### ✅ 8. Restart Squid
+
+```bash
+sudo systemctl restart squid
+sudo systemctl status squid
+```
+
+---
+
+### ✅ 9. Test the Setup
+
+From any client machine:
+
+1. Open a web browser.
+2. Enter: `http://192.168.80.128:3128`
+
+You should see content served by the Apache server (`192.168.80.129`) via Squid.
+
+---
+
+## ✅ Final Result
+
+Squid now acts as a **reverse proxy**, forwarding requests to the Apache web server while controlling access and caching.
+
+---
+
+Let me know if you want a **scripted version** or want to **expand this to HTTPS**!
