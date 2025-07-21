@@ -1,0 +1,132 @@
+Here's a **complete guide** to setting up **Squid as a load balancer** using the config you've outlined. This allows Squid to distribute HTTP requests between two Apache2 servers using **round-robin**.
+
+---
+
+## 🖥️ Setup Overview
+
+| Role         | IP               | Function                    |
+| ------------ | ---------------- | --------------------------- |
+| Squid Proxy  | `192.168.80.128` | Acts as proxy/load balancer |
+| Web Server 1 | `192.168.80.129` | Apache2 (Client 1)          |
+| Web Server 2 | `192.168.80.131` | Apache2 (Deb 1)             |
+
+---
+
+## 🔧 1. Install Squid (on 192.168.80.128)
+
+```bash
+sudo apt update
+sudo apt install squid -y
+```
+
+---
+
+## 🛠️ 2. Configure Squid
+
+Edit the config file:
+
+```bash
+sudo nano /etc/squid/squid.conf
+```
+
+Add or modify the following lines:
+
+### 🔹 ACL to restrict access (optional)
+
+```squid
+acl my_site_acl dst 192.168.80.128
+http_access allow my_site_acl
+```
+
+### 🔹 Set HTTP port with virtual host support
+
+```squid
+http_port 80 vhost
+```
+
+### 🔹 Add cache\_peers for load balancing
+
+```squid
+cache_peer 192.168.80.129 parent 80 0 no-query round-robin weight=1 name=server1
+cache_peer 192.168.80.131 parent 80 0 no-query round-robin weight=1 name=server2
+```
+
+### 🔹 Optional: Allow all access (for testing only – restrict later)
+
+```squid
+http_access allow all
+```
+
+---
+
+## 🧱 3. Fix `/etc/hosts` (if hostname resolution errors occur)
+
+Edit:
+
+```bash
+sudo nano /etc/hosts
+```
+
+Add:
+
+```
+127.0.0.1   deb
+```
+
+You can also map peer IPs if needed:
+
+```
+192.168.80.129  server1
+192.168.80.131  server2
+```
+
+---
+
+## 🔄 4. Restart Squid
+
+```bash
+sudo systemctl restart squid
+sudo systemctl status squid
+```
+
+---
+
+## 🌐 5. Testing in Browser
+
+1. On your **client browser**, enter:
+
+```
+http://192.168.80.128
+```
+
+2. Each refresh should load content from either `192.168.80.129` or `192.168.80.131`.
+
+✅ This demonstrates **round-robin load balancing** between the two Apache servers.
+
+---
+
+## 🧪 Verify Behavior
+
+On Squid:
+
+```bash
+tail -f /var/log/squid/access.log
+```
+
+You'll see alternating logs for both Apache server IPs.
+
+---
+
+## 🛡️ Notes
+
+* For **content-specific balancing**, add URL or path-based ACLs.
+* You can tune `weight` to prefer one server more.
+* Production use: consider adding **health checks** using ICMP or HTTP via scripts.
+
+---
+
+Let me know if you'd like to:
+
+* Add SSL (HTTPS) support
+* Implement failover (backup) servers
+* Load balance other services like FTP or custom ports
