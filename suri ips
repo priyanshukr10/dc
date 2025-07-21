@@ -1,0 +1,177 @@
+Here's a complete guide on **setting up Suricata as an Intrusion Prevention System (IPS)**, including rule configuration for active **network intrusion prevention**.
+
+---
+
+## 🛡️ What is Suricata?
+
+**Suricata** is an open-source, high-performance NIDS/NIPS/NSM capable of:
+
+* Real-time traffic analysis and packet logging
+* Detecting intrusions using signatures
+* Operating as **IDS** (monitor-only) or **IPS** (inline, blocking)
+* Supporting IDS/IPS rules from Snort and Emerging Threats
+
+---
+
+## ✅ 1. System Requirements
+
+* OS: Ubuntu/Debian/CentOS
+* Kernel: Supports **NFQUEUE** (for IPS)
+* At least 2 network interfaces (e.g., `eth0` for LAN, `eth1` for WAN)
+
+---
+
+## 🧰 2. Install Suricata (Debian/Ubuntu)
+
+```bash
+sudo apt update
+sudo apt install suricata -y
+```
+
+---
+
+## ⚙️ 3. Configure Suricata as an **IPS**
+
+### A. Enable Inline Mode (NFQUEUE)
+
+Edit Suricata config:
+
+```bash
+sudo nano /etc/suricata/suricata.yaml
+```
+
+Set:
+
+```yaml
+af-packet:
+  - interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    use-mmap: yes
+    mode: inline
+```
+
+> Replace `eth0` with the actual interface that sees your traffic.
+
+---
+
+### B. Configure IPS NFQUEUE Rules
+
+For Suricata to block packets, traffic must be passed through **NFQUEUE**. Add iptables rules like:
+
+```bash
+sudo iptables -I FORWARD -j NFQUEUE --queue-num 0
+sudo iptables -I INPUT -j NFQUEUE --queue-num 0
+```
+
+---
+
+## 🧪 4. Test Rule: Block ICMP (ping) Requests
+
+Create a custom rule file:
+
+```bash
+sudo nano /etc/suricata/rules/custom.rules
+```
+
+Add:
+
+```snort
+drop icmp any any -> any any (msg:"ICMP Packet Dropped"; sid:1000001; rev:1;)
+```
+
+Then link your custom rule in the config:
+
+```yaml
+rule-files:
+  - custom.rules
+```
+
+Restart Suricata:
+
+```bash
+sudo systemctl restart suricata
+```
+
+> Now when you ping the machine, it will **drop ICMP packets** instead of responding.
+
+---
+
+## 🔍 5. Logs and Alerting
+
+Suricata logs everything under:
+
+```bash
+/var/log/suricata/
+```
+
+* `eve.json`: Detailed alerts and metadata
+* `fast.log`: Easy-to-read alert summary
+
+To view alerts:
+
+```bash
+sudo tail -f /var/log/suricata/fast.log
+```
+
+---
+
+## 🔁 6. Update Rules Automatically
+
+Install the Suricata rules updater:
+
+```bash
+sudo apt install suricata-update
+sudo suricata-update
+```
+
+Enable Emerging Threats rules:
+
+```bash
+sudo suricata-update enable-source et/open
+sudo suricata-update
+```
+
+Restart Suricata:
+
+```bash
+sudo systemctl restart suricata
+```
+
+---
+
+## 🔐 7. Example Rule Use Cases
+
+| Rule                                                                                                            | Behavior                |
+| --------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `drop tcp any any -> any 22`                                                                                    | Block all SSH access    |
+| `drop tcp $EXTERNAL_NET any -> $HOME_NET 80`                                                                    | Block inbound HTTP      |
+| `alert http any any -> any any (content:"/etc/passwd"; msg:"Possible passwd file access"; sid:1000003; rev:1;)` | Alert on suspicious URL |
+
+---
+
+## ✅ Summary
+
+| Step                      | Command/Config                    |
+| ------------------------- | --------------------------------- |
+| Install Suricata          | `sudo apt install suricata`       |
+| Set inline mode           | `mode: inline` in `suricata.yaml` |
+| Route packets via NFQUEUE | `iptables -j NFQUEUE`             |
+| Add rule                  | In `custom.rules`                 |
+| View logs                 | `fast.log`, `eve.json`            |
+
+---
+
+## 🚀 Optional Add-ons
+
+* **Dashboard**: Use **ELK Stack** or **SIEM** to visualize Suricata alerts
+* **Suricata + pfSense**: pfSense also supports Suricata via its GUI
+* **Load Balancing with af-packet**: For multi-core high-performance
+
+---
+
+Would you like a sample test environment using VirtualBox or Docker for this IPS setup?
+Or help integrating Suricata alerts with **Fail2ban** or a **Slack/Discord alert bot**?
+
+Let me know!
