@@ -1,0 +1,182 @@
+Here's a complete guide on **pfSense OS installation and basic configuration** — perfect for building your own firewall/router on a physical device or in a virtualized environment like VMware, VirtualBox, or Proxmox.
+
+---
+
+## 🧱 What is pfSense?
+
+**pfSense** is an open-source FreeBSD-based firewall and router platform, managed via a web interface. It supports:
+
+* Firewalling
+* NAT
+* VPN (IPsec, OpenVPN)
+* VLANs
+* DHCP, DNS, and more
+
+---
+
+## 🔧 1. pfSense OS Installation
+
+### ✅ A. System Requirements (for bare metal or VM)
+
+| Component | Minimum                  |
+| --------- | ------------------------ |
+| CPU       | 1 GHz+                   |
+| RAM       | 1 GB (2+ GB recommended) |
+| Storage   | 4 GB+                    |
+| NICs      | At least 2 (WAN & LAN)   |
+
+---
+
+### ✅ B. Download pfSense ISO
+
+* Go to: [https://www.pfsense.org/download/](https://www.pfsense.org/download/)
+* Architecture: `AMD64`
+* Installer: `USB Memstick` or `CD Image`
+* Console: Choose `VGA` if using monitor/keyboard
+
+---
+
+### ✅ C. Install pfSense (steps apply to physical & virtual)
+
+1. **Boot from ISO** (USB or VM ISO attach)
+2. Choose **Install pfSense**
+3. Accept license agreement
+4. Partition type: Use **Auto (UFS or ZFS)**
+5. Wait for install → then reboot
+6. Remove the ISO/USB when prompted
+
+---
+
+## 🌐 2. Basic pfSense Configuration (Post-Install)
+
+Once the system reboots:
+
+### ✅ A. Initial Console Setup
+
+You'll see a **console menu** like this:
+
+```
+1) Assign Interfaces
+2) Set IP Addresses
+3) Enable/Disable DHCP
+...
+```
+
+Usually, **auto-detection assigns WAN/LAN** correctly. If not, use Option 1.
+
+---
+
+### ✅ B. Set LAN IP Address (Option 2)
+
+Assign a static IP for LAN:
+
+```bash
+LAN IP: 192.168.1.1
+Subnet: 24 (255.255.255.0)
+```
+
+Enable DHCP on LAN if desired.
+
+---
+
+## 🖥️ 3. Access pfSense Web GUI
+
+From a device on the LAN:
+
+* Open browser → go to: `https://192.168.1.1`
+* Default login:
+
+  ```
+  Username: admin
+  Password: pfsense
+  ```
+
+---
+
+## ⚙️ 4. pfSense Initial Wizard Setup
+
+### Steps:
+
+1. **Change Hostname & Domain**
+2. **Set time zone**
+3. **Configure WAN** (static IP, DHCP, or PPPoE)
+4. **Configure LAN**
+5. **Set admin password**
+6. Apply settings and reload
+
+---
+
+## 📐 5. Basic Configuration Tasks
+
+### ✅ A. Set DNS
+
+System > General Setup → Add DNS servers (e.g., 1.1.1.1 or 8.8.8.8)
+
+---
+
+### ✅ B. Configure DHCP Server
+
+Services > DHCP Server → Enable for LAN
+
+---
+
+### ✅ C. Set NAT/Firewall Rules
+
+Firewall > Rules
+Firewall > NAT
+
+LAN rules typically allow outbound traffic. WAN should have no inbound rules by default (unless configured manually).
+
+---
+
+### ✅ D. Enable SSH (optional)
+
+System > Advanced > Admin Access → Enable Secure Shell
+
+---
+
+## 🧪 6. Test Internet Access
+
+* Connect a client to the LAN port or LAN VM
+* Check if the device receives an IP (e.g., `192.168.1.100`)
+* Try pinging `8.8.8.8` or accessing websites
+
+---
+
+## 📦 Optional: Package Installation
+
+Go to **System > Package Manager > Available Packages**
+Install useful tools like:
+
+| Package                 | Purpose                     |
+| ----------------------- | --------------------------- |
+| `openvpn-client-export` | Easy export for VPN configs |
+| `pfBlockerNG`           | Ad/tracker/malware blocking |
+| `squid`                 | Web proxy                   |
+| `snort` or `Suricata`   | IDS/IPS                     |
+| `acme`                  | Let’s Encrypt SSL           |
+
+---
+
+## ✅ Summary: Post-Install Configuration Checklist
+
+| Task           | Where                               |
+| -------------- | ----------------------------------- |
+| Set LAN/WAN IP | Console or Interfaces > Assignments |
+| DHCP Server    | Services > DHCP Server              |
+| DNS Servers    | System > General Setup              |
+| NAT Rules      | Firewall > NAT                      |
+| VPN            | VPN > OpenVPN/IPsec                 |
+| System Updates | System > Update                     |
+
+---
+
+## 🚀 Next Steps
+
+Would you like help with:
+
+* Setting up **OpenVPN or IPsec** on pfSense?
+* Configuring **pfBlockerNG** for ad/malware blocking?
+* **Squid proxy** setup with access control?
+
+Let me know what you want to explore next!
