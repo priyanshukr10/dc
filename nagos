@@ -1,0 +1,160 @@
+Here is a **cleaned-up and organized version** of your **Day-3 LAB: Nagios Server Installation on Linux**. This includes everything from pre-setup, package installation, building from source, enabling web access, and preparing it for use with plugins.
+
+---
+
+## 🧪 **Day-3 LAB – Nagios Server Installation (Linux)**
+
+---
+
+### 📋 **Pre-Setup Checklist**
+
+#### 🖥️ 1. Set Hostname
+
+```bash
+sudo hostnamectl set-hostname nagios-server
+```
+
+#### 🌐 2. Configure Static IP
+
+Edit your network configuration (depends on system):
+
+```bash
+sudo nano /etc/network/interfaces
+# OR
+sudo nano /etc/netplan/*.yaml
+```
+
+#### 💻 3. Update APT and Install `sudo`
+
+```bash
+apt update
+apt install sudo -y
+```
+
+#### 🕒 4. Set Timezone
+
+```bash
+sudo timedatectl set-timezone <Your/Timezone>
+```
+
+---
+
+### 🔧 **Install Dependencies**
+
+```bash
+sudo apt install -y apache2 apache2-utils autoconf gcc libc6 libgd-dev \
+make php python3 tree unzip wget libkrb5-dev openssl libssl-dev
+```
+
+---
+
+### 🛠️ **Download and Compile Nagios**
+
+> Replace version numbers if needed.
+
+```bash
+cd /tmp
+wget https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.4.6.tar.gz
+tar -xzf nagios-4.4.6.tar.gz
+cd nagios-4.4.6
+sudo ./configure --with-httpd-conf=/etc/apache2/sites-enabled
+sudo make all
+```
+
+---
+
+### 👤 **Create Users and Groups**
+
+```bash
+sudo useradd nagios
+sudo usermod -a -G nagios www-data
+```
+
+---
+
+### 📦 **Install Nagios**
+
+```bash
+sudo make install
+sudo make install-daemoninit      # Install Nagios as a systemd service
+sudo make install-commandmode     # Set permissions for external command support
+sudo make install-config          # Sample config files
+sudo make install-webconf         # Web config for Apache
+```
+
+---
+
+### 🌐 **Configure Apache2 for Nagios UI**
+
+Enable required modules:
+
+```bash
+sudo a2enmod cgi
+sudo a2enmod rewrite
+```
+
+Create web admin user:
+
+```bash
+sudo htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin
+```
+
+Restart Apache:
+
+```bash
+sudo systemctl restart apache2
+```
+
+---
+
+### ✅ **Verify Nagios Config**
+
+```bash
+sudo /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+```
+
+---
+
+### 🔌 **Nagios Plugins Installation**
+
+Install required packages:
+
+```bash
+sudo apt install -y automake autotools-dev bc build-essential dc gawk \
+gettext libmcrypt-dev libnet-snmp-perl libssl-dev snmp
+```
+
+Download and compile plugins:
+
+```bash
+cd /tmp
+wget https://nagios-plugins.org/download/nagios-plugins-2.3.3.tar.gz
+tar -xvzf nagios-plugins-2.3.3.tar.gz
+cd nagios-plugins-2.3.3
+./configure
+make
+sudo make install
+```
+
+---
+
+### 🚀 **Start Nagios**
+
+```bash
+sudo systemctl start nagios
+sudo systemctl enable nagios
+```
+
+---
+
+### 🌐 **Access Nagios Web UI**
+
+* Open your browser:
+  `http://<your_server_ip>/nagios`
+* Login:
+  **Username:** `nagiosadmin`
+  **Password:** (as set via `htpasswd`)
+
+---
+
+Let me know if you want to add **NRPE**, **host monitoring**, or **custom commands/services** in Nagios.
