@@ -1,0 +1,145 @@
+Implementing **rate limiting and IP blacklisting with `iptables`** is a powerful way to mitigate **DoS/DDoS attacks** at the firewall level. Below is a **step-by-step guide** with examples and best practices.
+
+---
+
+## 🔐 Objectives
+
+1. **Rate Limit** incoming connections (e.g., HTTP, SSH).
+2. **Blacklist** (DROP) IPs generating excessive traffic.
+3. Use `iptables` modules:
+
+   * `limit` (for rate limiting)
+   * `recent` (for IP tracking)
+   * `hashlimit` (for more granular limits)
+
+---
+
+## ✅ 1. Rate Limiting with `limit` Module
+
+### Example: Limit SSH connection attempts
+
+```bash
+sudo iptables -A INPUT -p tcp --dport 22 -m limit --limit 3/min --limit-burst 5 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 22 -j DROP
+```
+
+🔹 **Explanation**:
+
+* Accept max **3 SSH connections per minute**.
+* If burst > 5, drop excess packets.
+
+---
+
+## ✅ 2. Rate Limiting with `hashlimit` Module
+
+### Example: Limit HTTP requests **per IP**
+
+```bash
+sudo iptables -A INPUT -p tcp --dport 80 -m state --state NEW \
+  -m hashlimit --hashlimit 30/sec --hashlimit-burst 50 \
+  --hashlimit-mode srcip --hashlimit-name http-limit -j ACCEPT
+
+sudo iptables -A INPUT -p tcp --dport 80 -j DROP
+```
+
+🔹 **Explanation**:
+
+* Allows **30 new connections/sec** per IP to port 80.
+* Bursts up to 50 allowed.
+* Excess traffic gets dropped.
+
+---
+
+## ✅ 3. IP Blacklisting with `recent` Module
+
+### Block IPs making too many requests in a short time
+
+```bash
+# Track new connections
+sudo iptables -A INPUT -p tcp --dport 80 -m state --state NEW \
+  -m recent --set --name badguys
+
+# Block IPs that tried more than 20 connections in last 60 sec
+sudo iptables -A INPUT -p tcp --dport 80 -m recent --update --seconds 60 --hitcount 20 --name badguys -j DROP
+```
+
+---
+
+## ✅ 4. Manual IP Blacklisting
+
+### Block a specific IP permanently
+
+```bash
+sudo iptables -A INPUT -s 203.0.113.123 -j DROP
+```
+
+---
+
+## ✅ 5. Combine with Logging (Optional)
+
+To log before dropping:
+
+```bash
+sudo iptables -A INPUT -m limit --limit 5/min -j LOG --log-prefix "IPTABLES-DROP: " --log-level 7
+sudo iptables -A INPUT -j DROP
+```
+
+Check logs:
+
+```bash
+sudo tail -f /var/log/syslog | grep IPTABLES
+```
+
+---
+
+## 🛠️ 6. Save and Persist Rules
+
+### Debian/Ubuntu:
+
+```bash
+sudo iptables-save > /etc/iptables/rules.v4
+```
+
+If `iptables-persistent` isn’t installed:
+
+```bash
+sudo apt install iptables-persistent
+```
+
+---
+
+## 🧪 7. Testing
+
+You can simulate basic DoS behavior with tools like:
+
+* `ab -n 1000 -c 50 http://<server>/` (Apache Benchmark)
+* `hping3` or `slowloris`
+* `watch` + `curl` in a loop from different hosts
+
+Use `iptables -L -v` to watch packet counters and rule hits.
+
+---
+
+## 📋 Summary Table
+
+| Technique                  | Module      | Example Use                |
+| -------------------------- | ----------- | -------------------------- |
+| Rate limit per second      | `limit`     | SSH brute force protection |
+| Per-IP rate limit          | `hashlimit` | HTTP DoS protection        |
+| IP tracking & blacklisting | `recent`    | Detect burst requests      |
+| Static blacklisting        | N/A         | Manual IP drop             |
+| Logging                    | `log`       | Before dropping packets    |
+
+---
+
+## 🧠 Best Practices
+
+* Use `fail2ban` along with `iptables` for dynamic response to brute-force attempts.
+* Combine `iptables` limits with an **Nginx/Squid rate limit** or **Suricata** inline rules.
+* Keep a whitelist of trusted IPs.
+* Monitor logs actively with `logwatch`, `ELK`, or `grafana+prometheus`.
+
+---
+
+Would you like a **bash script** that sets up rate limiting and blacklisting automatically?
+Or help tuning for a specific service (e.g., HTTP, SSH, SMTP)?
