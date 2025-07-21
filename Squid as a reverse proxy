@@ -1,0 +1,150 @@
+Great! You're setting up **Squid as a reverse proxy** to serve content from an Apache web server using port `3128`. Here's a **complete and corrected guide** for your setup.
+
+---
+
+## 🖥️ Setup Overview
+
+| Role    | Hostname | IP Address       | Function                  |
+| ------- | -------- | ---------------- | ------------------------- |
+| Squid   | `deb1`   | `192.168.80.128` | Reverse Proxy (Port 3128) |
+| Apache2 | `deb2`   | `192.168.80.129` | Web Server                |
+
+---
+
+## 🔧 Step-by-Step Configuration
+
+### ✅ On `deb2` (Apache2 Webserver)
+
+```bash
+sudo apt update
+sudo apt install apache2 -y
+```
+
+Confirm it's running:
+
+```bash
+sudo systemctl status apache2
+```
+
+Test:
+Open in browser → `http://192.168.80.129` — should show the Apache2 default page.
+
+---
+
+### ✅ On `deb1` (Squid Reverse Proxy)
+
+Install Squid:
+
+```bash
+sudo apt install squid -y
+```
+
+---
+
+### 🛠️ Edit Squid Config:
+
+```bash
+sudo nano /etc/squid/squid.conf
+```
+
+Clear or comment the default rules, then add the following:
+
+---
+
+### 🔹 1. `acl` - Define destination ACL
+
+```squid
+acl my_site_acl dst 192.168.80.128
+```
+
+---
+
+### 🔹 2. `http_access` - Allow defined ACL
+
+```squid
+http_access allow my_site_acl
+```
+
+---
+
+### 🔹 3. `http_port` - Use Squid in accelerator (reverse proxy) mode
+
+```squid
+http_port 3128 accel vhost defaultsite=192.168.80.129
+```
+
+---
+
+### 🔹 4. `cache_peer` - Connect to the Apache server
+
+```squid
+cache_peer 192.168.80.129 parent 80 0 no-query originserver name=myserver
+```
+
+---
+
+### 🔹 5. `cache_peer_access` - Control access to the peer
+
+```squid
+cache_peer_access myserver allow my_site_acl
+cache_peer_access myserver deny all
+```
+
+---
+
+### 💾 Save and exit, then restart Squid:
+
+```bash
+sudo systemctl restart squid
+sudo systemctl status squid
+```
+
+---
+
+## 🌐 Access in Browser:
+
+Open your browser and enter:
+
+```
+http://192.168.80.128:3128
+```
+
+✅ You should now see the **Apache2 page served via Squid**!
+
+---
+
+## 🧪 Troubleshooting Tips:
+
+### 🔹 If you see errors:
+
+* Check `/var/log/squid/access.log` and `/var/log/squid/cache.log`
+* Make sure Apache2 on `192.168.80.129` is up and reachable
+* Confirm no firewall is blocking port `3128`
+
+### 🔹 DNS or hostname issues?
+
+Edit `/etc/hosts`:
+
+```plaintext
+192.168.80.129  deb2
+127.0.0.1       deb1
+```
+
+---
+
+## ✅ Summary:
+
+| Setting    | Value                         |
+| ---------- | ----------------------------- |
+| Squid Port | `3128`                        |
+| Web Server | `192.168.80.129` (Apache2)    |
+| Squid Mode | Reverse Proxy (`accel vhost`) |
+| Access URL | `http://192.168.80.128:3128`  |
+
+---
+
+Let me know if you'd like to:
+
+* Load balance multiple web servers
+* Add caching
+* Use Squid with HTTPS (SSL termination)
