@@ -1,0 +1,208 @@
+Here's a **complete, step-by-step guide** to configuring **OpenVPN** on both **Linux and Windows** for a **Site-to-Site VPN**. This allows two or more networks (e.g., `Office A` and `Office B`) to securely communicate as if they were on the same local network.
+
+---
+
+## 🧭 GOAL: Site-to-Site VPN with OpenVPN
+
+```
+[LAN A: 192.168.1.0/24] ←→ [OpenVPN Server] ⇄ [OpenVPN Client] ←→ [LAN B: 192.168.2.0/24]
+          (Linux)                           (Public IP)        (Linux or Windows)
+```
+
+---
+
+## 🧱 1. OpenVPN Server Setup (Linux – e.g., Ubuntu)
+
+### ✅ A. Install OpenVPN & Easy-RSA
+
+```bash
+sudo apt update
+sudo apt install openvpn easy-rsa
+```
+
+### ✅ B. Set up the PKI (Public Key Infrastructure)
+
+```bash
+make-cadir ~/openvpn-ca
+cd ~/openvpn-ca
+./easyrsa init-pki
+./easyrsa build-ca      # Create CA
+./easyrsa gen-req server1 nopass
+./easyrsa sign-req server server1
+./easyrsa gen-dh
+openvpn --genkey --secret ta.key
+```
+
+### ✅ C. Create Server Config `/etc/openvpn/server.conf`
+
+```conf
+port 1194
+proto udp
+dev tun
+ca ca.crt
+cert server1.crt
+key server1.key
+dh dh.pem
+topology subnet
+server 10.8.0.0 255.255.255.0
+client-to-client
+keepalive 10 120
+persist-key
+persist-tun
+comp-lzo
+status openvpn-status.log
+verb 3
+push "route 192.168.2.0 255.255.255.0"  # Push route to client network
+```
+
+### ✅ D. Enable IP forwarding on the server
+
+```bash
+echo 1 > /proc/sys/net/ipv4/ip_forward
+```
+
+Make it permanent:
+
+```bash
+echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+sudo sysctl -p
+```
+
+---
+
+## 📤 2. OpenVPN Client Setup (Linux or Windows)
+
+### Linux:
+
+1. Install OpenVPN:
+
+```bash
+sudo apt install openvpn
+```
+
+2. Place the client config and certificates in `/etc/openvpn/client/`
+
+### Windows:
+
+1. Download & install [OpenVPN GUI for Windows](https://openvpn.net/community-downloads/)
+2. Place config files and certs in:
+   `C:\Program Files\OpenVPN\config\`
+
+---
+
+### ✅ Client Configuration (`client.ovpn`)
+
+```conf
+client
+dev tun
+proto udp
+remote YOUR_SERVER_PUBLIC_IP 1194
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+ca ca.crt
+cert client1.crt
+key client1.key
+tls-auth ta.key 1
+comp-lzo
+verb 3
+route 192.168.1.0 255.255.255.0  # Access server-side LAN
+```
+
+---
+
+## 🧠 3. Site-to-Site Routing
+
+### On the OpenVPN **Server**, add a route to the client-side LAN:
+
+```conf
+# In server.conf
+route 192.168.2.0 255.255.255.0
+```
+
+### On the OpenVPN **Client**, route to the server LAN:
+
+```conf
+route 192.168.1.0 255.255.255.0
+```
+
+### On both ends, add static routes on routers **OR** use NAT:
+
+#### Example NAT (on the client):
+
+```bash
+iptables -t nat -A POSTROUTING -s 192.168.2.0/24 -o tun0 -j MASQUERADE
+```
+
+---
+
+## 🔁 4. Enable OpenVPN on Boot
+
+### Linux:
+
+```bash
+sudo systemctl enable openvpn-server@server
+sudo systemctl start openvpn-server@server
+```
+
+### Windows:
+
+* Right-click OpenVPN GUI → **Run as Administrator**
+* Configs in `C:\Program Files\OpenVPN\config\`
+
+---
+
+## 🔒 5. Security Recommendations
+
+* Use `tls-crypt` instead of `tls-auth` for better security
+* Use strong Diffie-Hellman keys (4096-bit)
+* Configure firewall rules to only allow VPN ports (e.g., `1194/UDP`)
+
+---
+
+## ✅ Test Connectivity
+
+From a client on `LAN A`:
+
+```bash
+ping 192.168.2.10  # Ping host in LAN B
+```
+
+From a client on `LAN B`:
+
+```bash
+ping 192.168.1.10  # Ping host in LAN A
+```
+
+---
+
+## 🧪 Troubleshooting
+
+| Issue          | Check                           |
+| -------------- | ------------------------------- |
+| No ping        | Verify IP forwarding and routes |
+| Cannot connect | Check firewall for port 1194    |
+| Auth fails     | Validate client certs match CA  |
+
+---
+
+## 📘 Summary
+
+| Component            | Linux                             | Windows                     |
+| -------------------- | --------------------------------- | --------------------------- |
+| Server Config        | `/etc/openvpn/server.conf`        | N/A                         |
+| Client Config        | `/etc/openvpn/client/client.conf` | `client.ovpn`               |
+| Certificates         | Managed via Easy-RSA              | Shared via config directory |
+| Site-to-Site Routing | `route` and `push` options        | Same                        |
+| Autostart            | `systemd`                         | OpenVPN GUI (Admin)         |
+
+---
+
+Would you like:
+
+* A script to generate all OpenVPN keys and configs?
+* A Dockerized or pfSense-based OpenVPN setup?
+* Adding authentication with username/password?
+
+Let me know!
