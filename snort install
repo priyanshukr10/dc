@@ -1,0 +1,165 @@
+Here's a **cleaned-up, step-by-step guide to installing and configuring Snort** (Intrusion Detection System) on a Linux machine, typically Debian/Ubuntu-based, following your notes.
+
+---
+
+# 🛡️ **Snort Installation & Configuration on Linux**
+
+---
+
+## ✅ Step 1: Install Required Dependencies
+
+```bash
+sudo apt update
+sudo apt install -y \
+  bison ca-certificates flex gcc \
+  libdumbnet-dev libluajit-5.1-dev \
+  libnghttp2-dev libpcre3-dev libssl-dev \
+  make openssl wget zlib1g-dev libpcap-dev
+```
+
+---
+
+## ✅ Step 2: Prepare Directory for Source Files
+
+```bash
+sudo mkdir -p /usr/src/snort_src
+cd /usr/src/snort_src
+```
+
+---
+
+## ✅ Step 3: Install DAQ Library (Data Acquisition)
+
+> DAQ is needed for Snort to capture and analyze packets.
+
+```bash
+# Example for DAQ 2.0.7 (Check for newer versions if needed)
+wget https://www.snort.org/downloads/snort/daq-2.0.7.tar.gz
+tar -xvzf daq-2.0.7.tar.gz
+cd daq-2.0.7
+
+./configure
+make
+sudo make install
+```
+
+---
+
+## ✅ Step 4: Download & Install Snort
+
+```bash
+cd /usr/src/snort_src
+wget https://www.snort.org/downloads/snort/snort-2.9.20.tar.gz   # Adjust if newer version available
+tar -xvzf snort-2.9.20.tar.gz
+cd snort-2.9.20
+
+# Fix possible header dependency
+sudo ln -s /usr/include/tirpc/netconfig.h /usr/include/
+
+./configure
+make
+sudo make install
+sudo ldconfig   # Refresh dynamic linker
+```
+
+---
+
+## ✅ Step 5: Create Snort User & Required Directories
+
+```bash
+# Create Snort user and group
+sudo groupadd snort
+sudo useradd snort -r -s /usr/sbin/nologin -c SNORT_IDS -g snort
+
+# Create directories
+sudo mkdir -p /etc/snort/rules
+sudo mkdir -p /var/log/snort
+sudo mkdir -p /usr/local/lib/snort_dynamicrules
+```
+
+---
+
+## ✅ Step 6: Copy Default Configuration Files
+
+```bash
+sudo cp /usr/src/snort_src/snort-2.9.20/etc/*.conf* /etc/snort/
+sudo cp /usr/src/snort_src/snort-2.9.20/etc/*.map /etc/snort/
+```
+
+---
+
+## ✅ Step 7: Create Basic Rules Files
+
+```bash
+sudo touch /etc/snort/rules/white_list.rules
+sudo touch /etc/snort/rules/black_list.rules
+sudo touch /etc/snort/rules/local.rules
+```
+
+---
+
+## ✅ Step 8: Set Permissions
+
+```bash
+sudo chmod -R 5775 /etc/snort
+sudo chmod -R 5775 /var/log/snort
+sudo chmod -R 5775 /usr/local/lib/snort_dynamicrules
+
+sudo chown -R snort:snort /etc/snort
+sudo chown -R snort:snort /var/log/snort
+sudo chown -R snort:snort /usr/local/lib/snort_dynamicrules
+```
+
+---
+
+## ✅ Step 9: Configure `/etc/snort/snort.conf`
+
+> Open the config file to make changes:
+
+```bash
+sudo nano /etc/snort/snort.conf
+```
+
+✅ Make sure to update:
+
+* `ipvar HOME_NET` → your internal IP/network, e.g. `192.168.80.0/24`
+* `include $RULE_PATH/local.rules` is **not commented**
+* Paths are correctly set to `/etc/snort/rules`
+
+---
+
+## ✅ Step 10: Run Snort in IDS Mode
+
+```bash
+sudo snort -i ens33 -u snort -g snort -c /etc/snort/snort.conf -A console
+```
+
+> **Explanation**:
+
+* `-i ens33` → Use the correct network interface (check with `ip a`)
+* `-u/-g snort` → Run as snort user and group
+* `-c` → Specify config file
+* `-A console` → Output alerts to terminal
+
+---
+
+## ✅ (Optional) Test with a Custom Rule
+
+Add a test rule to `/etc/snort/rules/local.rules`:
+
+```bash
+alert icmp any any -> any any (msg:"ICMP Test"; sid:1000001; rev:1;)
+```
+
+Restart Snort and try `ping` from another machine — you should see alerts in the console.
+
+---
+
+## 🧪 Final Tips
+
+* Use `snort -T -c /etc/snort/snort.conf` to **test the config** for errors.
+* To monitor in background/log mode, use `-D` for daemon mode and `-l /var/log/snort`.
+
+---
+
+Would you like a systemd service file to run Snort as a background service automatically on boot?
